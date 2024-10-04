@@ -1,13 +1,11 @@
-// components/BuybackSearchTool.js
-import React from 'react';
+// BuybackSearchTool.js
+import { useState, useEffect } from 'react';
 
-const BuybackSearchTool = () => {
+export default function BuybackSearchTool() {
   return (
     <div>
-      <h2>Buyback Search Tool Component</h2>
-      {/* ここにコンポーネントの内容を追加します */}
+      {/* ここにツールの実装 */}
+      <h2>Buyback Search Tool</h2>
     </div>
   );
-};
-
-export default BuybackSearchTool;
+}
