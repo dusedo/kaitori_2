@@ -1,4 +1,5 @@
-import BuybackSearchTool from '../components/BuybackSearchTool'
+// page.js
+import BuybackSearchTool from './components/BuybackSearchTool';
 
 export default function Home() {
   return (
