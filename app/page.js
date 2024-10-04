@@ -1,4 +1,4 @@
-import BuybackSearchTool from './BuybackSearchTool'; // BuybackSearchToolのファイルパスに応じて調整してください
+import BuybackSearchTool from '../components/BuybackSearchTool'
 
 export default function Home() {
   return (
