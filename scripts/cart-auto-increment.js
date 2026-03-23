@@ -3,20 +3,23 @@
  *
  * 使い方:
  *   1. node scripts/cart-auto-increment.js
- *   2. ブラウザが開くので、手動でログイン
- *   3. ログイン後、ターミナルでEnterを押すと自動処理開始
+ *   2. ブラウザが開き、自動ログイン後にカート処理開始
  *
  * 動作:
+ *   - 自動ログイン
  *   - カートページをリロード
  *   - 各商品のselect要素を検出
- *   - 現在の値が最大値未満（最大4）なら、1つ増やして送信
+ *   - 現在の値が最大値未満（最大4）なら変更して送信
  *   - 3秒おきにリロード→選択を繰り返す
  */
 
 const puppeteer = require('puppeteer-core');
 const readline = require('readline');
 
+const LOGIN_URL = 'https://p-bandai.jp/login/?c=1';
 const CART_URL = 'https://p-bandai.jp/cart/';
+const LOGIN_ID = 'kenduen@gmail.com';
+const LOGIN_PW = 'ken0325';
 const MAX_QTY = 4;
 const RELOAD_INTERVAL_MS = 3000;
 
@@ -88,11 +91,25 @@ async function main() {
 
   const page = (await browser.pages())[0] || (await browser.newPage());
 
-  // ログインページへ遷移
-  console.log('プレミアムバンダイのマイページを開きます...');
-  await page.goto('https://p-bandai.jp/mypage/', { waitUntil: 'networkidle2', timeout: 60000 });
+  // 自動ログイン
+  console.log('ログインページを開きます...');
+  await page.goto(LOGIN_URL, { waitUntil: 'networkidle2', timeout: 60000 });
 
-  await waitForEnter('\nログインが完了したらEnterを押してください...');
+  // ログインフォームに入力
+  console.log('ログインID・パスワードを入力中...');
+  await page.waitForSelector('#login_id', { timeout: 10000 });
+  await page.type('#login_id', LOGIN_ID, { delay: 50 });
+  await page.type('#password', LOGIN_PW, { delay: 50 });
+
+  // ログインボタンをクリック
+  console.log('ログインボタンをクリック...');
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
+    page.click('#btnLogin'),
+  ]);
+  console.log('ログイン完了。');
+
+  await waitForEnter('\nカート処理を開始するにはEnterを押してください...');
 
   console.log('自動処理を開始します...');
   let round = 0;
