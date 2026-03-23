@@ -12,9 +12,12 @@
 """
 
 import time
+import subprocess
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -26,14 +29,35 @@ MAX_QTY = 4
 RELOAD_INTERVAL = 3  # 秒
 
 
-def main():
-    # ブラウザ起動（目視確認用にheadlessオフ）
+def create_driver():
+    """Bot検出を回避するChromeドライバーを作成"""
     options = Options()
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-setuid-sandbox")
     options.add_argument("--start-maximized")
+    # 「自動テストソフトウェアによって制御されています」バーを非表示
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+    # navigator.webdriverをfalseに
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    # 通常のユーザーエージェントを使用
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    )
 
     driver = webdriver.Chrome(options=options)
+    # navigator.webdriver を隠す
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            // chrome.runtime を偽装
+            window.chrome = { runtime: {} };
+        """
+    })
+    return driver
+
+
+def main():
+    driver = create_driver()
     wait = WebDriverWait(driver, 15)
 
     try:
