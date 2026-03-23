@@ -2,93 +2,72 @@
 プレミアムバンダイ カート内商品の個数を自動変更するスクリプト
 
 使い方:
-  python p_bandai_cart_auto_increment.py
+  1. まずChromeを完全に閉じる（タスクバーも）
+  2. コマンドプロンプトで以下を実行してChromeを起動:
+     chrome.exe --remote-debugging-port=9222
+  3. 開いたChromeで手動でログイン（https://p-bandai.jp/login/?c=1）
+  4. ログイン後、別のコマンドプロンプトでこのスクリプトを実行:
+     python p_bandai_cart_auto_increment.py
+  5. Enterで処理開始
 
 動作:
-  1. ブラウザ起動 → 自動ログイン
-  2. Enter押下で処理開始
-  3. カートページをリロード → select要素の数量を最大4まで変更
-  4. 3秒おきに繰り返し
+  - 手動で開いたChromeに接続（Bot検出されない）
+  - カートページをリロード → select要素の数量を最大4まで変更
+  - 3秒おきに繰り返し
 """
 
 import time
-import subprocess
-import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 
-LOGIN_URL = "https://p-bandai.jp/login/?c=1"
 CART_URL = "https://p-bandai.jp/cart/"
-LOGIN_ID = "kenduen@gmail.com"
-LOGIN_PW = "ken0325"
 MAX_QTY = 4
 RELOAD_INTERVAL = 3  # 秒
 
 
-def create_driver():
-    """Bot検出を回避するChromeドライバーを作成"""
+def connect_to_chrome():
+    """既に起動済みのChromeに接続する"""
     options = Options()
-    options.add_argument("--start-maximized")
-    # 「自動テストソフトウェアによって制御されています」バーを非表示
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option("useAutomationExtension", False)
-    # navigator.webdriverをfalseに
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    # 通常のユーザーエージェントを使用
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-    )
-
+    options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
     driver = webdriver.Chrome(options=options)
-    # navigator.webdriver を隠す
-    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source": """
-            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            // chrome.runtime を偽装
-            window.chrome = { runtime: {} };
-        """
-    })
     return driver
 
 
 def main():
-    driver = create_driver()
-    wait = WebDriverWait(driver, 15)
+    print("=" * 50)
+    print("プレミアムバンダイ カート数量自動変更ツール")
+    print("=" * 50)
+    print()
+    print("【事前準備】")
+    print("1. Chromeを完全に閉じる")
+    print("2. コマンドプロンプトで以下を実行:")
+    print('   chrome.exe --remote-debugging-port=9222')
+    print("   （パスが通っていない場合）")
+    print('   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222')
+    print("3. 開いたChromeでプレバンにログイン")
+    print()
+    input("準備ができたらEnterを押してください...")
+
+    print("\nChromeに接続中...")
+    try:
+        driver = connect_to_chrome()
+    except Exception as e:
+        print(f"接続エラー: {e}")
+        print("\nChromeが --remote-debugging-port=9222 で起動しているか確認してください。")
+        input("Enterで終了...")
+        return
+
+    print(f"接続成功！ 現在のURL: {driver.current_url}")
+    input("\nカート処理を開始するにはEnterを押してください...")
+
+    # --- カート数量自動変更ループ ---
+    print("自動処理を開始します...")
+    round_num = 0
 
     try:
-        # --- 自動ログイン ---
-        print("ログインページを開きます...")
-        driver.get(LOGIN_URL)
-
-        wait.until(EC.presence_of_element_located((By.ID, "login_id")))
-        print("ログインID・パスワードを入力中...")
-
-        login_input = driver.find_element(By.ID, "login_id")
-        login_input.clear()
-        login_input.send_keys(LOGIN_ID)
-
-        pw_input = driver.find_element(By.ID, "password")
-        pw_input.clear()
-        pw_input.send_keys(LOGIN_PW)
-
-        print("ログインボタンをクリック...")
-        driver.find_element(By.ID, "btnLogin").click()
-
-        # ページ遷移を待つ
-        time.sleep(3)
-        print(f"ログイン完了。現在のURL: {driver.current_url}")
-
-        input("\nカート処理を開始するにはEnterを押してください...")
-
-        # --- カート数量自動変更ループ ---
-        print("自動処理を開始します...")
-        round_num = 0
-
         while True:
             round_num += 1
             print(f"\n--- ラウンド {round_num} ---")
@@ -139,8 +118,6 @@ def main():
                     time.sleep(2)
                     # ページがリロードされるので、残りのselectは次のラウンドで処理
                     break
-                elif current_val < target:
-                    all_maxed = False
 
             if changed > 0:
                 print(f"{changed}件の数量を変更。ページリロードを待ちます...")
@@ -153,15 +130,13 @@ def main():
             print(f"{RELOAD_INTERVAL}秒後にリロードします...")
             time.sleep(RELOAD_INTERVAL)
 
-        input("\n処理完了。Enterでブラウザを閉じます...")
-
     except KeyboardInterrupt:
         print("\n中断されました。")
     except Exception as e:
         print(f"エラー: {e}")
-        input("Enterでブラウザを閉じます...")
-    finally:
-        driver.quit()
+
+    print("\n処理終了。Chromeはそのまま使えます。")
+    input("Enterで終了...")
 
 
 if __name__ == "__main__":
