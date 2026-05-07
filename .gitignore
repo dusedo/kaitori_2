@@ -40,3 +40,9 @@ out/
 .env.local
 .DS_Store
 .vercel
+
+# scraper runtime
+/data/
+.venv/
+__pycache__/
+*.pyc

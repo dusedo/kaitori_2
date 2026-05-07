@@ -6,12 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "monitor": "node scripts/node/monitor.mjs",
+    "monitor:py": "python scripts/py/monitor.py"
   },
   "dependencies": {
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.2.14"
+    "next": "14.2.14",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.47.0"
   },
   "devDependencies": {
     "eslint": "^8",
